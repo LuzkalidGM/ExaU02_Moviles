@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:gameon/features/perfil/views/perfil_view/unauthenticated/complaints_book_view.dart';
-import 'package:gameon/features/perfil/views/perfil_view/unauthenticated/register_business_view.dart';
+import 'package:gameon/features/gestor/views/registro_gestor_view.dart';
 import 'package:gameon/features/perfil/views/perfil_view/unauthenticated/unauthenticated_help_view.dart';
 
 class PerfilUnauthenticatedView extends StatelessWidget {
@@ -280,7 +280,7 @@ class PerfilUnauthenticatedView extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => const RegisterBusinessView(),
+                    builder: (_) => const RegistroGestorView(),
                   ),
                 );
               },

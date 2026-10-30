@@ -4,7 +4,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/chat_user.dart';
 import '../models/conversation.dart';
 import '../services/chat_service.dart';
-import '../services/user_sync_service.dart';
 
 /// Modelo para representar un jugador encontrado en la búsqueda
 class PlayerSearchResult {
@@ -36,10 +35,8 @@ class PlayerSearchResult {
 /// - Filtrado por deporte y nivel de habilidad
 /// - Detección de conversaciones existentes
 /// - Creación de nuevas conversaciones
-/// - Sincronización automática de usuarios a Firebase
 class FindPlayersViewModel extends ChangeNotifier {
   final ChatService _chatService;
-  final UserSyncService _userSyncService;
   final supabase = Supabase.instance.client;
 
   // Estado
@@ -85,9 +82,7 @@ class FindPlayersViewModel extends ChangeNotifier {
 
   FindPlayersViewModel({
     ChatService? chatService,
-    UserSyncService? userSyncService,
-  }) : _chatService = chatService ?? ChatService(),
-       _userSyncService = userSyncService ?? UserSyncService();
+  }) : _chatService = chatService ?? ChatService();
 
   bool _isDisposed = false;
   @override

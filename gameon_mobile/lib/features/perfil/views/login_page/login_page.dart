@@ -24,6 +24,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   final _loginFormKey = GlobalKey<FormState>();
   final _emailLoginCtrl = TextEditingController();
   final _passLoginCtrl = TextEditingController();
+  AppUserMode _selectedMode = AppUserMode.deportista;
 
   // Formulario de registro
   final _signupFormKey = GlobalKey<FormState>();
@@ -36,7 +37,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _vm = PerfilViewModel();
+    _vm = context.read<PerfilViewModel>();
   }
 
   @override
@@ -277,6 +278,15 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                 ),
                 const SizedBox(height: 32),
                 // Botón de login
+                SegmentedButton<AppUserMode>(
+                  segments: const [
+                    ButtonSegment(value: AppUserMode.deportista, icon: Icon(Icons.directions_run), label: Text('Deportista')),
+                    ButtonSegment(value: AppUserMode.gestor, icon: Icon(Icons.business), label: Text('Gestor')),
+                  ],
+                  selected: {_selectedMode},
+                  onSelectionChanged: (value) => setState(() => _selectedMode = value.first),
+                ),
+                const SizedBox(height: 16),
                 CustomButton(
                   text: 'Iniciar Sesión',
                   icon: Icons.login,
@@ -437,6 +447,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     final res = await _vm.login(
       email: _emailLoginCtrl.text.trim(),
       password: _passLoginCtrl.text,
+      mode: _selectedMode,
     );
 
     if (!mounted) return;

@@ -9,6 +9,7 @@ import 'package:gameon/features/perfil/views/perfil_view/authenticated/notificat
 import 'package:provider/provider.dart';
 import 'package:gameon/core/theme/app_theme.dart';
 import 'package:gameon/core/theme/theme_controller.dart';
+import 'package:gameon/features/gestor/views/registro_gestor_view.dart';
 
 String _formatDate(DateTime? dt) {
   if (dt == null) return '—';
@@ -642,6 +643,26 @@ class PerfilAuthenticatedView extends StatelessWidget {
             color: Colors.blue,
             onTap: () {
               _navigateToEditPerfil(context);
+            },
+          ),
+          Divider(height: 1, color: theme.dividerColor),
+          _buildOptionItem(
+            context: context,
+            icon: Icons.business_outlined,
+            title: context.watch<PerfilViewModel>().hasManagerProfile
+                ? 'Cambiar a gestor' : 'Registrar mi centro',
+            subtitle: context.watch<PerfilViewModel>().hasManagerProfile
+                ? 'Gestiona tus canchas con esta cuenta' : 'Habilita el perfil gestor en esta cuenta',
+            color: Colors.green,
+            onTap: () {
+              final vm = context.read<PerfilViewModel>();
+              if (vm.hasManagerProfile) {
+                vm.selectMode(AppUserMode.gestor);
+              } else {
+                Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => const RegistroGestorView(),
+                ));
+              }
             },
           ),
           Divider(height: 1, color: theme.dividerColor),

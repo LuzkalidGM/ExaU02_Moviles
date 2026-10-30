@@ -5,7 +5,7 @@ import 'package:gameon/features/perfil/views/perfil_view/unauthenticated/forms/w
 import 'package:provider/provider.dart';
 import '../../../password_recovery_view.dart';
 
-class LoginForm extends StatelessWidget {
+class LoginForm extends StatefulWidget {
   final GlobalKey<FormState> formKey;
   final TextEditingController emailCtrl;
   final TextEditingController passCtrl;
@@ -17,12 +17,19 @@ class LoginForm extends StatelessWidget {
   });
 
   @override
+  State<LoginForm> createState() => _LoginFormState();
+}
+
+class _LoginFormState extends State<LoginForm> {
+  AppUserMode selectedMode = AppUserMode.deportista;
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Form(
-        key: formKey,
+        key: widget.formKey,
         child: ListView(
           children: [
             const SizedBox(height: 8),
@@ -40,7 +47,7 @@ class LoginForm extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             TextFormField(
-              controller: emailCtrl,
+              controller: widget.emailCtrl,
               keyboardType: TextInputType.emailAddress,
               decoration: InputDecoration(
                 labelText: 'Correo electrónico',
@@ -70,7 +77,7 @@ class LoginForm extends StatelessWidget {
               },
             ),
             const SizedBox(height: 14),
-            PasswordField(controller: passCtrl, label: 'Contraseña'),
+            PasswordField(controller: widget.passCtrl, label: 'Contraseña'),
             const SizedBox(height: 8),
             Align(
               alignment: Alignment.centerRight,
@@ -78,7 +85,7 @@ class LoginForm extends StatelessWidget {
                 onPressed: () => Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (_) =>
-                        PasswordRecoveryView(initialEmail: emailCtrl.text),
+                        PasswordRecoveryView(initialEmail: widget.emailCtrl.text),
                   ),
                 ),
                 style: TextButton.styleFrom(
@@ -91,6 +98,15 @@ class LoginForm extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
+            SegmentedButton<AppUserMode>(
+              segments: const [
+                ButtonSegment(value: AppUserMode.deportista, icon: Icon(Icons.directions_run), label: Text('Deportista')),
+                ButtonSegment(value: AppUserMode.gestor, icon: Icon(Icons.business), label: Text('Gestor')),
+              ],
+              selected: {selectedMode},
+              onSelectionChanged: (value) => setState(() => selectedMode = value.first),
+            ),
+            const SizedBox(height: 12),
             Consumer<PerfilViewModel>(
               builder: (context, vm, _) {
                 final busy = vm.isLoggingIn;
@@ -98,12 +114,13 @@ class LoginForm extends StatelessWidget {
                   onPressed: busy
                       ? null
                       : () async {
-                          if (!(formKey.currentState?.validate() ?? false)) {
+                          if (!(widget.formKey.currentState?.validate() ?? false)) {
                             return;
                           }
                           final res = await vm.login(
-                            email: emailCtrl.text,
-                            password: passCtrl.text,
+                            email: widget.emailCtrl.text,
+                            password: widget.passCtrl.text,
+                            mode: selectedMode,
                           );
                           if (!context.mounted) return;
                           if (res.ok) {

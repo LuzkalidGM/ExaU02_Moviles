@@ -14,6 +14,7 @@ import 'package:gameon/features/perfil/viewmodels/perfil_viewmodel.dart';
 import 'package:gameon/features/perfil/views/login_page/login_page.dart';
 import 'package:gameon/core/theme/app_theme.dart';
 import 'package:gameon/core/theme/theme_controller.dart';
+import 'package:gameon/features/gestor/views/gestor_view.dart';
 
 // HomeView: controla tabs y bottom navigation
 class HomeView extends StatefulWidget {
@@ -34,6 +35,10 @@ class _HomeViewState extends State<HomeView> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
+    final managerId = context.watch<PerfilViewModel>().managerId;
+    if (managerId != null && context.watch<PerfilViewModel>().mode == AppUserMode.gestor) {
+      return GestorView(managerId: managerId);
+    }
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final isFootball =

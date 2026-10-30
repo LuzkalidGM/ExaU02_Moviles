@@ -6,6 +6,8 @@ import '../models/usuario_deportista.dart';
 import 'package:gameon/features/chat/services/user_sync_service.dart';
 import 'package:gameon/core/services/notification_service.dart';
 
+enum AppUserMode { deportista, gestor }
+
 class PerfilViewModel extends ChangeNotifier {
   // Form keys could be kept in the view, but we manage simple flags here.
   bool _isSigningUp = false;
@@ -16,6 +18,19 @@ class PerfilViewModel extends ChangeNotifier {
 
   UsuarioDeportista? _profile;
   UsuarioDeportista? get profile => _profile;
+  int? _managerId;
+  int? get managerId => _managerId;
+  AppUserMode _mode = AppUserMode.deportista;
+  AppUserMode get mode => _mode;
+  bool get hasAthleteProfile => _profile != null;
+  bool get hasManagerProfile => _managerId != null;
+  bool selectMode(AppUserMode mode) {
+    if (mode == AppUserMode.deportista && _profile == null) return false;
+    if (mode == AppUserMode.gestor && _managerId == null) return false;
+    _mode = mode;
+    notifyListeners();
+    return true;
+  }
   bool get isLoggedIn => supabase.auth.currentSession != null;
 
   final UserSyncService _userSyncService = UserSyncService();
@@ -25,38 +40,40 @@ class PerfilViewModel extends ChangeNotifier {
 
   PerfilViewModel([this._notificationService]) {
     // Escucha cambios de autenticación para cargar / limpiar perfil
-    supabase.auth.onAuthStateChange.listen((event) {
+    supabase.auth.onAuthStateChange.listen((event) async {
       final session = event.session;
       switch (event.event) {
         case AuthChangeEvent.signedIn:
         case AuthChangeEvent.tokenRefreshed:
           if (session?.user != null) {
-            _loadProfile();
-            _registerFcmToken();
-            _userSyncService.setPresence(
-              userId: session!.user.id,
-              isOnline: true,
-            );
-            startHeartbeat();
+            await _loadProfile();
+            if (_profile != null && supabase.auth.currentUser?.id == session!.user.id) {
+              _registerFcmToken();
+              _userSyncService.setPresence(userId: session.user.id, isOnline: true);
+              startHeartbeat();
+            }
           }
           break;
         case AuthChangeEvent.signedOut:
           stopHeartbeat();
           _profile = null;
+          _managerId = null;
+          _mode = AppUserMode.deportista;
           notifyListeners();
           break;
         default:
           if (session?.user == null) {
             stopHeartbeat();
             _profile = null;
+            _managerId = null;
+            _mode = AppUserMode.deportista;
             notifyListeners();
           }
       }
     });
     // Si ya hay sesión al crear el VM (hot reload), cargar perfil.
     if (supabase.auth.currentSession?.user != null) {
-      _loadProfile();
-      _registerFcmToken();
+      _loadProfile().then((_) { if (_profile != null) _registerFcmToken(); });
     }
     // Escuchar rotación del token y actualizar en Supabase
     _tokenRefreshSubscription = _notificationService?.onTokenRefresh.listen((
@@ -156,6 +173,16 @@ class PerfilViewModel extends ChangeNotifier {
   Future<void> _loadProfile({int maxRetries = 3}) async {
     final user = supabase.auth.currentUser;
     if (user == null) return;
+    _profile = null;
+    _managerId = null;
+
+    try {
+      final manager = await supabase.rpc('gestor_actual');
+      if (supabase.auth.currentUser?.id != user.id) return;
+      _managerId = manager is num ? manager.toInt() : int.tryParse('$manager');
+    } on PostgrestException catch (e) {
+      developer.log('No se pudo comprobar cuenta gestora: ${e.message}');
+    }
 
     int attempt = 0;
     while (attempt < maxRetries) {
@@ -230,11 +257,24 @@ class PerfilViewModel extends ChangeNotifier {
       }
       break;
     }
+    if (_managerId != null) {
+      if (!_isLoggingIn) _mode = AppUserMode.gestor;
+      notifyListeners();
+    }
   }
 
   /// Método público para recargar el perfil desde la base de datos
   Future<void> reloadProfile() async {
     await _loadProfile();
+  }
+
+  Future<void> registerManager({required String businessName, required String ruc}) async {
+    await supabase.rpc('registrar_gestor_actual', params: {
+      'p_nombre': businessName.trim(), 'p_ruc': ruc.trim(),
+    });
+    await _loadProfile();
+    if (_managerId == null) throw StateError('No se creó el perfil gestor');
+    selectMode(AppUserMode.gestor);
   }
 
   Future<void> signOut() async {
@@ -245,6 +285,8 @@ class PerfilViewModel extends ChangeNotifier {
       // Supabase elimina la sesión local al iniciar signOut, incluso si falla
       // la revocación remota. Limpiamos también el perfil visible en memoria.
       _profile = null;
+      _managerId = null;
+      _mode = AppUserMode.deportista;
       notifyListeners();
     }
   }
@@ -303,9 +345,11 @@ class PerfilViewModel extends ChangeNotifier {
   Future<LoginResult> login({
     required String email,
     required String password,
+    AppUserMode mode = AppUserMode.deportista,
   }) async {
     if (_isLoggingIn) return LoginResult.busy();
     _isLoggingIn = true;
+    _mode = mode;
     notifyListeners();
     try {
       final resp = await supabase.auth.signInWithPassword(
@@ -316,9 +360,17 @@ class PerfilViewModel extends ChangeNotifier {
         return LoginResult.error('Credenciales inválidas');
       }
       await _loadProfile();
+      if (!selectMode(mode)) {
+        await supabase.auth.signOut();
+        return LoginResult.error(mode == AppUserMode.gestor
+            ? 'Esta cuenta aún no tiene perfil gestor. Regístralo desde tu perfil deportista.'
+            : 'Esta cuenta aún no tiene perfil deportista.');
+      }
       // Actualizar FCM token tras iniciar sesión
-      await _registerFcmToken();
-      await _userSyncService.setCurrentUserPresence(true);
+      if (_profile != null) {
+        await _registerFcmToken();
+        await _userSyncService.setCurrentUserPresence(true);
+      }
       return LoginResult.success();
     } on AuthException catch (e) {
       developer.log('VM login AuthException: ${e.message}', error: e);

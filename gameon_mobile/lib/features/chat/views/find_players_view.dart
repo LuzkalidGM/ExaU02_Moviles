@@ -738,9 +738,4 @@ class _PlayerListItem extends StatelessWidget {
     );
   }
 
-  String _getDeporteName(String deporteId) {
-    // Aquí podrías hacer un lookup si necesitas nombres legibles
-    // Por ahora retornamos el ID
-    return deporteId;
-  }
 }
