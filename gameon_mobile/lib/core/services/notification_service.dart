@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:gameon/core/logging/app_logger.dart';
+
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -8,7 +9,7 @@ import 'notification_navigation_service.dart';
 /// Debe ser una función top-level (fuera de clases) con @pragma('vm:entry-point')
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  debugPrint('📨 Mensaje en background: ${message.notification?.title}');
+  AppLogger.log('📨 Mensaje en background: ${message.notification?.title}');
 }
 
 /// Servicio encargado de gestionar las notificaciones push de Firebase
@@ -45,7 +46,7 @@ class NotificationService {
   /// Solicita permisos de notificaciones al usuario
   Future<AuthorizationStatus> requestPermission() async {
     final settings = await FirebaseMessaging.instance.requestPermission();
-    debugPrint(
+    AppLogger.log(
       '[NotificationService] Estado del permiso: ${settings.authorizationStatus}',
     );
     return settings.authorizationStatus;
@@ -112,11 +113,11 @@ class NotificationService {
           >()
           ?.createNotificationChannel(channel);
 
-      debugPrint(
+      AppLogger.log(
         '[NotificationService] Canal actualizado: Sonido=$soundEnabled, Vibración=$vibrationEnabled, Importancia=$importance',
       );
     } catch (e) {
-      debugPrint('[NotificationService] Error al actualizar canal: $e');
+      AppLogger.log('[NotificationService] Error al actualizar canal: $e');
     }
   }
 
@@ -132,7 +133,7 @@ class NotificationService {
           badge: false,
           sound: false,
         );
-    debugPrint(
+    AppLogger.log(
       '[NotificationService] Notificaciones en foreground desactivadas',
     );
   }
@@ -140,7 +141,7 @@ class NotificationService {
   /// Registra el handler para mensajes en background
   void _registerBackgroundHandler() {
     FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-    debugPrint('[NotificationService] Background handler registrado');
+    AppLogger.log('[NotificationService] Background handler registrado');
   }
 
   // ==========================================================================
@@ -160,7 +161,7 @@ class NotificationService {
   /// Aquí podrías actualizar la UI internamente si es necesario.
   void _setupForegroundListener() {
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      debugPrint(
+      AppLogger.log(
         '📨 Mensaje recibido en primer plano: ${message.notification?.title}',
       );
       // Aquí podrías:
@@ -174,7 +175,7 @@ class NotificationService {
   /// Listener para cuando el usuario toca una notificación (app en BACKGROUND)
   void _setupBackgroundOpenedListener() {
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      debugPrint('📬 Notificación abierta desde background');
+      AppLogger.log('📬 Notificación abierta desde background');
       _navigationService.handleNotificationTap(message.data);
     });
   }
@@ -183,7 +184,7 @@ class NotificationService {
   Future<void> _checkInitialMessage() async {
     final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
     if (initialMessage != null) {
-      debugPrint('📬 App abierta desde notificación');
+      AppLogger.log('📬 App abierta desde notificación');
       _navigationService.handleNotificationTap(initialMessage.data);
     }
   }
@@ -200,10 +201,10 @@ class NotificationService {
     try {
       if (!await areNotificationsEnabled()) return null;
       final token = await FirebaseMessaging.instance.getToken();
-      debugPrint('[NotificationService] Token FCM obtenido');
+      AppLogger.log('[NotificationService] Token FCM obtenido');
       return token;
     } catch (e) {
-      debugPrint('[NotificationService] Error al obtener token: $e');
+      AppLogger.log('[NotificationService] Error al obtener token: $e');
       return null;
     }
   }

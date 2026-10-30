@@ -1,4 +1,4 @@
-import 'dart:developer' as developer;
+import 'package:gameon/core/logging/app_logger.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/chat_user.dart';
@@ -80,9 +80,8 @@ class FindPlayersViewModel extends ChangeNotifier {
     return user.id;
   }
 
-  FindPlayersViewModel({
-    ChatService? chatService,
-  }) : _chatService = chatService ?? ChatService();
+  FindPlayersViewModel({ChatService? chatService})
+    : _chatService = chatService ?? ChatService();
 
   bool _isDisposed = false;
   @override
@@ -112,7 +111,7 @@ class FindPlayersViewModel extends ChangeNotifier {
       _deportes = response;
       notifyListeners();
     } catch (e) {
-      developer.log(
+      AppLogger.log(
         'Error al cargar deportes',
         error: e,
         name: 'FindPlayersViewModel',
@@ -231,7 +230,7 @@ class FindPlayersViewModel extends ChangeNotifier {
             .first
             .timeout(const Duration(seconds: 5));
       } catch (e) {
-        developer.log(
+        AppLogger.log(
           'No se pudieron cargar conversaciones existentes (continuando sin ellas)',
           error: e,
           name: 'FindPlayersViewModel',
@@ -277,7 +276,7 @@ class FindPlayersViewModel extends ChangeNotifier {
       _loading = false;
       notifyListeners();
     } catch (e) {
-      developer.log(
+      AppLogger.log(
         'Error al buscar jugadores',
         error: e,
         name: 'FindPlayersViewModel',
@@ -435,7 +434,7 @@ class FindPlayersViewModel extends ChangeNotifier {
 
       return conversationId;
     } catch (e) {
-      developer.log(
+      AppLogger.log(
         'Error al crear conversación',
         error: e,
         name: 'FindPlayersViewModel',

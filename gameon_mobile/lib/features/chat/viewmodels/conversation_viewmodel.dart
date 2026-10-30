@@ -1,6 +1,6 @@
+import 'package:gameon/core/logging/app_logger.dart';
 import 'dart:async';
 import 'dart:io';
-import 'dart:developer' as developer;
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -90,7 +90,7 @@ class ConversationViewModel extends ChangeNotifier {
               _markMessagesAsRead();
             },
             onError: (error) {
-              developer.log(
+              AppLogger.log(
                 'Error en stream de mensajes',
                 error: error,
                 name: 'ConversationViewModel',
@@ -156,14 +156,14 @@ class ConversationViewModel extends ChangeNotifier {
                         conversationId: conversationId,
                         user: updatedOtherUser,
                       );
-                      developer.log(
+                      AppLogger.log(
                         'Info del otro usuario actualizada',
                         name: 'ConversationViewModel',
                       );
                     }
                   }
                 } catch (e) {
-                  developer.log(
+                  AppLogger.log(
                     'Error actualizando info del otro usuario',
                     error: e,
                   );
@@ -172,7 +172,7 @@ class ConversationViewModel extends ChangeNotifier {
               notifyListeners();
             },
             onError: (error) {
-              developer.log(
+              AppLogger.log(
                 'Error en stream de conversación',
                 error: error,
                 name: 'ConversationViewModel',
@@ -207,10 +207,10 @@ class ConversationViewModel extends ChangeNotifier {
           );
         }
       } catch (e) {
-        developer.log('Error al actualizar info de participante', error: e);
+        AppLogger.log('Error al actualizar info de participante', error: e);
       }
     } catch (e) {
-      developer.log(
+      AppLogger.log(
         'Error al iniciar ConversationViewModel',
         error: e,
         name: 'ConversationViewModel',
@@ -229,7 +229,7 @@ class ConversationViewModel extends ChangeNotifier {
         userId: currentUserId,
       );
     } catch (e) {
-      developer.log(
+      AppLogger.log(
         'Error al marcar mensajes como leídos',
         error: e,
         name: 'ConversationViewModel',
@@ -243,7 +243,7 @@ class ConversationViewModel extends ChangeNotifier {
       // El stream se encargará de cargar la conversación
       // Esta función está aquí por si necesitamos hacer alguna inicialización adicional
     } catch (e) {
-      developer.log(
+      AppLogger.log(
         'Error al cargar conversación',
         error: e,
         name: 'ConversationViewModel',
@@ -273,7 +273,7 @@ class ConversationViewModel extends ChangeNotifier {
           .eq('auth_id', user.id)
           .maybeSingle();
 
-      developer.log(
+      AppLogger.log(
         'Perfil obtenido de Supabase: $response',
         name: 'ConversationViewModel',
       );
@@ -283,7 +283,7 @@ class ConversationViewModel extends ChangeNotifier {
       final nombreCompleto = '$nombreUser $apellidosUser'.trim();
       final imagenPerfil = response?['imagen_perfil'] as String?;
 
-      developer.log(
+      AppLogger.log(
         'Enviando mensaje con foto: $imagenPerfil',
         name: 'ConversationViewModel',
       );
@@ -300,7 +300,7 @@ class ConversationViewModel extends ChangeNotifier {
       _sendingMessage = false;
       notifyListeners();
     } catch (e) {
-      developer.log(
+      AppLogger.log(
         'Error al enviar mensaje',
         error: e,
         name: 'ConversationViewModel',
@@ -351,7 +351,7 @@ class ConversationViewModel extends ChangeNotifier {
       _sendingMessage = false;
       notifyListeners();
     } catch (e) {
-      developer.log(
+      AppLogger.log(
         'Error al enviar imagen',
         error: e,
         name: 'ConversationViewModel',
@@ -403,14 +403,14 @@ class ConversationViewModel extends ChangeNotifier {
       // 5. Obtener URL de descarga
       final downloadUrl = await snapshot.ref.getDownloadURL();
 
-      developer.log(
+      AppLogger.log(
         'Image uploaded successfully',
         name: 'ConversationViewModel',
       );
 
       return downloadUrl;
     } catch (e) {
-      developer.log(
+      AppLogger.log(
         'Error uploading image',
         error: e,
         name: 'ConversationViewModel',
@@ -428,12 +428,12 @@ class ConversationViewModel extends ChangeNotifier {
     try {
       final ref = FirebaseStorage.instance.refFromURL(imageUrl);
       await ref.delete();
-      developer.log(
+      AppLogger.log(
         'Image deleted successfully',
         name: 'ConversationViewModel',
       );
     } catch (e) {
-      developer.log(
+      AppLogger.log(
         'Error deleting image',
         error: e,
         name: 'ConversationViewModel',

@@ -1,4 +1,4 @@
-import 'dart:developer' as developer;
+import 'package:gameon/core/logging/app_logger.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/reserva.dart';
@@ -33,7 +33,7 @@ class ReservasListViewModel extends ChangeNotifier {
   final SupabaseClient? _customClient;
 
   ReservasListViewModel({SupabaseClient? supabaseClient})
-      : _customClient = supabaseClient;
+    : _customClient = supabaseClient;
 
   SupabaseClient? get _client {
     if (_customClient != null) return _customClient;
@@ -63,7 +63,7 @@ class ReservasListViewModel extends ChangeNotifier {
 
   static Future<void> refreshIfActive(int userId) async {
     if (_instance != null) {
-      developer.log('[ReservasListVM] Auto-refresh triggered for user $userId');
+      AppLogger.log('[ReservasListVM] Auto-refresh triggered for user $userId');
       await _instance!.cargarReservasUsuario(idUsuario: userId);
     }
   }
@@ -80,7 +80,7 @@ class ReservasListViewModel extends ChangeNotifier {
         notifyListeners();
         return;
       }
-      developer.log('[ReservasListVM] Cargando reservas idUsuario=$idUsuario');
+      AppLogger.log('[ReservasListVM] Cargando reservas idUsuario=$idUsuario');
       final data = await client
           .from('reservas')
           .select()
@@ -90,19 +90,19 @@ class ReservasListViewModel extends ChangeNotifier {
       reservas = (data as List)
           .map((j) => Reserva.fromJson(j as Map<String, dynamic>))
           .toList();
-      developer.log('[ReservasListVM] cargadas=${reservas.length}');
+      AppLogger.log('[ReservasListVM] cargadas=${reservas.length}');
       // Pre-cargar info básica de áreas de forma batch para mejorar UI
       await _preloadAreas();
     } on PostgrestException catch (e, st) {
       error = e.message;
-      developer.log(
+      AppLogger.log(
         '[ReservasListVM][ERROR] ${e.message}',
         error: e,
         stackTrace: st,
       );
     } catch (e, st) {
       error = 'Error inesperado';
-      developer.log('[ReservasListVM][ERROR] $e', error: e, stackTrace: st);
+      AppLogger.log('[ReservasListVM][ERROR] $e', error: e, stackTrace: st);
     } finally {
       cargando = false;
       notifyListeners();
@@ -136,7 +136,7 @@ class ReservasListViewModel extends ChangeNotifier {
         _areasCache[a.id] = a;
       }
     } catch (e, st) {
-      developer.log(
+      AppLogger.log(
         '[ReservasListVM][WARN] preloadAreas $e',
         error: e,
         stackTrace: st,
@@ -168,7 +168,7 @@ class ReservasListViewModel extends ChangeNotifier {
         return a;
       }
     } catch (e, st) {
-      developer.log(
+      AppLogger.log(
         '[ReservasListVM][WARN] getArea $e',
         error: e,
         stackTrace: st,
@@ -197,7 +197,7 @@ class ReservasListViewModel extends ChangeNotifier {
         return i;
       }
     } catch (e, st) {
-      developer.log(
+      AppLogger.log(
         '[ReservasListVM][WARN] getInstitucion $e',
         error: e,
         stackTrace: st,
@@ -219,13 +219,13 @@ class ReservasListViewModel extends ChangeNotifier {
         return Reserva.fromJson(row);
       }
     } on PostgrestException catch (e, st) {
-      developer.log(
+      AppLogger.log(
         '[ReservasListVM][ERROR] getReservaById ${e.message}',
         error: e,
         stackTrace: st,
       );
     } catch (e, st) {
-      developer.log(
+      AppLogger.log(
         '[ReservasListVM][ERROR] getReservaById $e',
         error: e,
         stackTrace: st,
@@ -295,13 +295,13 @@ class ReservasListViewModel extends ChangeNotifier {
         return (reserva: reserva, area: area, institucion: institucion);
       }
     } on PostgrestException catch (e, st) {
-      developer.log(
+      AppLogger.log(
         '[ReservasListVM][ERROR] getReservaWithDetails ${e.message}',
         error: e,
         stackTrace: st,
       );
     } catch (e, st) {
-      developer.log(
+      AppLogger.log(
         '[ReservasListVM][ERROR] getReservaWithDetails $e',
         error: e,
         stackTrace: st,

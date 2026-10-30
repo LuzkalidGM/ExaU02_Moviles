@@ -1,3 +1,6 @@
+import 'package:gameon/core/logging/app_logger.dart';
+import '../models/usuario_deportista.dart';
+import '../models/guardar_perfil_request.dart';
 import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
@@ -51,40 +54,22 @@ class EditPerfilViewModel extends ChangeNotifier {
   }
 
   /// Crea o actualiza el registro del usuario deportista y devuelve su `id`.
-  Future<SavePerfilResult> upsertUsuarioDeportista({
-    int? id,
-    required String username,
-    required String nombre,
-    required String apellidos,
-    required String telefono,
-    DateTime? fechaNacimiento,
-    required String genero,
-    required String nivelHabilidad,
-    String? fcmToken,
-    String? imagenPerfil,
-  }) async {
+  Future<SavePerfilResult> upsertUsuarioDeportista(
+    UsuarioDeportista usuario,
+  ) async {
     final supabase = Supabase.instance.client;
     final authUser = supabase.auth.currentUser;
-
-    final payload = {
-      'username': username.trim(),
-      'nombre': nombre.trim(),
-      'apellidos': apellidos.trim(),
-      'telefono': telefono.trim(),
-      'fecha_nacimiento': fechaNacimiento?.toIso8601String(),
-      'genero': genero.trim(),
-      'nivel_habilidad': nivelHabilidad.trim(),
-      if (imagenPerfil != null && imagenPerfil.isNotEmpty)
-        'imagen_perfil': imagenPerfil.trim(),
-      if (fcmToken != null && fcmToken.isNotEmpty) 'fcm_token': fcmToken,
-      if (authUser != null) 'auth_id': authUser.id,
-    };
-
+    if (authUser == null) {
+      return SavePerfilResult.error('Inicia sesión para guardar tu perfil.');
+    }
+    final id = int.tryParse(usuario.id);
+    final request = GuardarPerfilRequest.fromUsuario(usuario);
+    final payload = request.toJson();
     try {
       final exists = await supabase
           .from('usuarios_deportistas')
           .select('id')
-          .eq('username', username.trim())
+          .eq('username', request.username)
           .maybeSingle();
       if (exists != null) {
         final existingId = exists['id'] as int?;
@@ -105,7 +90,7 @@ class EditPerfilViewModel extends ChangeNotifier {
       } else {
         final res = await supabase
             .from('usuarios_deportistas')
-            .upsert(payload, onConflict: 'auth_id')
+            .upsert({...payload, 'auth_id': authUser.id}, onConflict: 'auth_id')
             .select('id')
             .single();
         return SavePerfilResult.success(res['id'] as int);
@@ -130,7 +115,7 @@ class EditPerfilViewModel extends ChangeNotifier {
   /// Devuelve la URL pública (download URL) o `null` si falla.
   Future<String?> uploadProfileImage(Uint8List data, String filename) async {
     try {
-      debugPrint(
+      AppLogger.log(
         '📤 Iniciando subida de imagen: $filename (${data.length} bytes)',
       );
       final ref = FirebaseStorage.instance
@@ -139,16 +124,16 @@ class EditPerfilViewModel extends ChangeNotifier {
           .child(filename);
 
       final meta = SettableMetadata(contentType: 'image/jpeg');
-      debugPrint('📤 Subiendo datos a Storage...');
+      AppLogger.log('📤 Subiendo datos a Storage...');
       await ref.putData(data, meta);
-      debugPrint('✅ Imagen subida, obteniendo URL...');
+      AppLogger.log('✅ Imagen subida, obteniendo URL...');
       // Obtener la URL de descarga
       final url = await ref.getDownloadURL();
-      debugPrint('✅ URL obtenida: $url');
+      AppLogger.log('✅ URL obtenida: $url');
       return url;
     } catch (e, stackTrace) {
-      debugPrint('❌ Error al subir imagen: $e');
-      debugPrint('Stack trace: $stackTrace');
+      AppLogger.log('❌ Error al subir imagen: $e');
+      AppLogger.log('Stack trace: $stackTrace');
       return null;
     }
   }

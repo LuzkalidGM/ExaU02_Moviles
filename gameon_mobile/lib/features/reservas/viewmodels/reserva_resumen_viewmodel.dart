@@ -1,3 +1,4 @@
+import 'package:gameon/core/logging/app_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -75,18 +76,18 @@ class ReservaResumenViewModel extends ChangeNotifier {
     try {
       final service = PayPalService(supabase);
       final usd = double.parse(costoTotalUsd.toStringAsFixed(2));
-      print(
+      AppLogger.log(
         '[VM] Creando orden PayPal por $usd USD (equiv S/. ${costoTotal.toStringAsFixed(2)})',
       );
       final data = await service.createOrder(usd, currency: 'USD');
       _orderId = data['orderId'];
       _approvalUrl = data['approvalUrl'];
-      print('[VM] Orden creada. orderId=$_orderId');
+      AppLogger.log('[VM] Orden creada. orderId=$_orderId');
       if (_orderId == null || _approvalUrl == null) {
         throw 'Respuesta incompleta del servidor PayPal';
       }
     } catch (e) {
-      print('[VM][ERROR] creando orden: $e');
+      AppLogger.log('[VM][ERROR] creando orden: $e');
       _setError('Error creando orden: $e');
     } finally {
       _setProcesando(false);
@@ -99,7 +100,7 @@ class ReservaResumenViewModel extends ChangeNotifier {
     await crearOrdenPayPal();
     if (_approvalUrl == null) return;
     final productName = buildProductName(context);
-    print('[VM] Abriendo WebView PayPal con URL $_approvalUrl');
+    AppLogger.log('[VM] Abriendo WebView PayPal con URL $_approvalUrl');
     final result = await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => PayPalWebView(
@@ -109,15 +110,17 @@ class ReservaResumenViewModel extends ChangeNotifier {
         ),
       ),
     );
-    print('[VM] Usuario regresó del WebView con result=$result');
+    AppLogger.log('[VM] Usuario regresó del WebView con result=$result');
 
     // Si el WebView devolvió true significa que se detectó la pantalla final de PayPal
     // (usuario aprobó el pago). Procedemos a captura automática.
     if (result == true) {
-      print('[VM] Aprobación detectada. Iniciando captura automática...');
+      AppLogger.log(
+        '[VM] Aprobación detectada. Iniciando captura automática...',
+      );
       await capturarPagoYCrearReserva(context);
     } else {
-      print(
+      AppLogger.log(
         '[VM] El usuario salió sin aprobación final detectada (result=$result).',
       );
     }
@@ -134,11 +137,11 @@ class ReservaResumenViewModel extends ChangeNotifier {
     _setError(null);
     try {
       final service = PayPalService(supabase);
-      print('[VM] Capturando pago para orderId=$_orderId');
+      AppLogger.log('[VM] Capturando pago para orderId=$_orderId');
       final capture = await service.capturePayment(_orderId!);
-      print('[VM] Resultado captura (raw): $capture');
+      AppLogger.log('[VM] Resultado captura (raw): $capture');
       if (capture['success'] == true) {
-        print('[VM] Creando reserva en BD');
+        AppLogger.log('[VM] Creando reserva en BD');
         // Tras capturar un pago exitoso establecemos la reserva como Confirmada
         // Extraer datos relevantes de la captura (si vienen en la respuesta)
         final amountCapturedUsd =
@@ -152,7 +155,7 @@ class ReservaResumenViewModel extends ChangeNotifier {
         // Validación ligera (no bloqueante) de consistencia de monto
         final diff = (amountCapturedSoles - costoTotal).abs();
         if (diff > 0.05) {
-          print(
+          AppLogger.log(
             '[VM][WARN] Diferencia entre monto calculado (S/. ${costoTotal.toStringAsFixed(2)}) y capturado (~S/. ${amountCapturedSoles.toStringAsFixed(2)}).',
           );
         }
@@ -186,7 +189,7 @@ class ReservaResumenViewModel extends ChangeNotifier {
         _setError('Captura fallida: ${capture['status']}');
       }
     } catch (e) {
-      print('[VM][ERROR] capturando pago / creando reserva: $e');
+      AppLogger.log('[VM][ERROR] capturando pago / creando reserva: $e');
       _setError('Error capturando pago: $e');
     } finally {
       _setProcesando(false);

@@ -1,3 +1,4 @@
+import 'package:gameon/core/logging/app_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -42,7 +43,7 @@ class NotificationNavigationService {
   void navigateToReserva(String? reservaIdStr) {
     final id = int.tryParse(reservaIdStr ?? '');
     if (id == null) {
-      debugPrint('[NotificationNav] ID de reserva inválido: $reservaIdStr');
+      AppLogger.log('[NotificationNav] ID de reserva inválido: $reservaIdStr');
       return;
     }
 
@@ -63,13 +64,15 @@ class NotificationNavigationService {
   /// a ConversationView con la información del otro usuario.
   Future<void> navigateToConversation(String? conversationId) async {
     if (conversationId == null || conversationId.isEmpty) {
-      debugPrint(
+      AppLogger.log(
         '[NotificationNav] ID de conversación inválido: $conversationId',
       );
       return;
     }
 
-    debugPrint('[NotificationNav] Navegando a conversación: $conversationId');
+    AppLogger.log(
+      '[NotificationNav] Navegando a conversación: $conversationId',
+    );
 
     try {
       // Obtener datos de la conversación desde Firestore
@@ -79,7 +82,7 @@ class NotificationNavigationService {
           .get();
 
       if (!conversationDoc.exists) {
-        debugPrint(
+        AppLogger.log(
           '[NotificationNav] Conversación no encontrada: $conversationId',
         );
         return;
@@ -89,7 +92,9 @@ class NotificationNavigationService {
       final participants = data['participants'] as Map<String, dynamic>?;
 
       if (participants == null) {
-        debugPrint('[NotificationNav] No hay participantes en la conversación');
+        AppLogger.log(
+          '[NotificationNav] No hay participantes en la conversación',
+        );
         return;
       }
 
@@ -98,7 +103,7 @@ class NotificationNavigationService {
       final currentUserId = currentUser?.id;
 
       if (currentUserId == null) {
-        debugPrint('[NotificationNav] Usuario no autenticado');
+        AppLogger.log('[NotificationNav] Usuario no autenticado');
         return;
       }
 
@@ -116,7 +121,9 @@ class NotificationNavigationService {
       }
 
       if (otherUserName == null) {
-        debugPrint('[NotificationNav] No se pudo identificar al otro usuario');
+        AppLogger.log(
+          '[NotificationNav] No se pudo identificar al otro usuario',
+        );
         return;
       }
 
@@ -131,7 +138,7 @@ class NotificationNavigationService {
         ),
       );
     } catch (e) {
-      debugPrint('[NotificationNav] Error al navegar a conversación: $e');
+      AppLogger.log('[NotificationNav] Error al navegar a conversación: $e');
     }
   }
 }

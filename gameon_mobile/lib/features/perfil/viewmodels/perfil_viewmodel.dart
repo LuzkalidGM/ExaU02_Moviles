@@ -1,5 +1,5 @@
+import 'package:gameon/core/logging/app_logger.dart';
 import 'dart:async';
-import 'dart:developer' as developer;
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/usuario_deportista.dart';
@@ -31,6 +31,7 @@ class PerfilViewModel extends ChangeNotifier {
     notifyListeners();
     return true;
   }
+
   bool get isLoggedIn => supabase.auth.currentSession != null;
 
   final UserSyncService _userSyncService = UserSyncService();
@@ -47,9 +48,13 @@ class PerfilViewModel extends ChangeNotifier {
         case AuthChangeEvent.tokenRefreshed:
           if (session?.user != null) {
             await _loadProfile();
-            if (_profile != null && supabase.auth.currentUser?.id == session!.user.id) {
+            if (_profile != null &&
+                supabase.auth.currentUser?.id == session!.user.id) {
               _registerFcmToken();
-              _userSyncService.setPresence(userId: session.user.id, isOnline: true);
+              _userSyncService.setPresence(
+                userId: session.user.id,
+                isOnline: true,
+              );
               startHeartbeat();
             }
           }
@@ -73,7 +78,9 @@ class PerfilViewModel extends ChangeNotifier {
     });
     // Si ya hay sesión al crear el VM (hot reload), cargar perfil.
     if (supabase.auth.currentSession?.user != null) {
-      _loadProfile().then((_) { if (_profile != null) _registerFcmToken(); });
+      _loadProfile().then((_) {
+        if (_profile != null) _registerFcmToken();
+      });
     }
     // Escuchar rotación del token y actualizar en Supabase
     _tokenRefreshSubscription = _notificationService?.onTokenRefresh.listen((
@@ -102,7 +109,7 @@ class PerfilViewModel extends ChangeNotifier {
       );
 
       final user = authResponse.user;
-      developer.log(
+      AppLogger.log(
         'VM signUp user present: ${user != null} session: ${authResponse.session != null}',
       );
       if (user == null) {
@@ -119,7 +126,7 @@ class PerfilViewModel extends ChangeNotifier {
 
       // Obtener FCM token
       final fcmToken = await _notificationService?.getToken();
-      developer.log('VM FCM token obtenido en signup: ${fcmToken != null}');
+      AppLogger.log('VM FCM token obtenido en signup: ${fcmToken != null}');
 
       final insertPayload = {
         'nombre': nombre,
@@ -129,11 +136,11 @@ class PerfilViewModel extends ChangeNotifier {
         'auth_id': user.id,
         'fcm_token': fcmToken,
       };
-      developer.log('VM: creando perfil de usuario');
+      AppLogger.log('VM: creando perfil de usuario');
       try {
         await supabase.from('usuarios_deportistas').insert(insertPayload);
       } on PostgrestException catch (e) {
-        developer.log('VM PostgrestException insert: ${e.message}', error: e);
+        AppLogger.log('VM PostgrestException insert: ${e.message}', error: e);
         if (e.message.toLowerCase().contains('permission') ||
             e.code == '42501') {
           return SignupResult.error(
@@ -151,7 +158,7 @@ class PerfilViewModel extends ChangeNotifier {
 
       // Verificar que el perfil se haya cargado correctamente
       if (_profile == null) {
-        developer.log('VM signup: perfil no se cargó después de crear usuario');
+        AppLogger.log('VM signup: perfil no se cargó después de crear usuario');
         return SignupResult.error(
           'Error al cargar perfil después de crear cuenta',
         );
@@ -159,10 +166,10 @@ class PerfilViewModel extends ChangeNotifier {
 
       return SignupResult.success();
     } on AuthException catch (e) {
-      developer.log('VM AuthException: ${e.message}', error: e);
+      AppLogger.log('VM AuthException: ${e.message}', error: e);
       return SignupResult.error(e.message);
     } catch (e, st) {
-      developer.log('VM Error genérico signup: $e', error: e, stackTrace: st);
+      AppLogger.log('VM Error genérico signup: $e', error: e, stackTrace: st);
       return SignupResult.error('Error inesperado');
     } finally {
       _isSigningUp = false;
@@ -181,13 +188,13 @@ class PerfilViewModel extends ChangeNotifier {
       if (supabase.auth.currentUser?.id != user.id) return;
       _managerId = manager is num ? manager.toInt() : int.tryParse('$manager');
     } on PostgrestException catch (e) {
-      developer.log('No se pudo comprobar cuenta gestora: ${e.message}');
+      AppLogger.log('No se pudo comprobar cuenta gestora: ${e.message}');
     }
 
     int attempt = 0;
     while (attempt < maxRetries) {
       try {
-        developer.log('VM _loadProfile: intento ${attempt + 1}/$maxRetries');
+        AppLogger.log('VM _loadProfile: intento ${attempt + 1}/$maxRetries');
         final data = await supabase
             .from('usuarios_deportistas')
             .select()
@@ -210,7 +217,7 @@ class PerfilViewModel extends ChangeNotifier {
 
               data['deportes_favoritos'] = deportes;
             } catch (e) {
-              developer.log('VM _loadProfile: error al cargar deportes: $e');
+              AppLogger.log('VM _loadProfile: error al cargar deportes: $e');
               data['deportes_favoritos'] = <String>[];
             }
           }
@@ -218,13 +225,13 @@ class PerfilViewModel extends ChangeNotifier {
           // Una consulta iniciada antes de salir no puede restaurar el perfil.
           if (supabase.auth.currentUser?.id != user.id) return;
           _profile = UsuarioDeportista.fromJson(data);
-          developer.log('VM _loadProfile: perfil cargado exitosamente');
+          AppLogger.log('VM _loadProfile: perfil cargado exitosamente');
           // Sincronizar usuario a Firebase tras cargar perfil
           await _userSyncService.syncCurrentUser();
           notifyListeners();
           return; // Éxito, salir del bucle
         } else {
-          developer.log(
+          AppLogger.log(
             'VM _loadProfile: sin registro en usuarios_deportistas en intento ${attempt + 1}',
           );
           if (attempt < maxRetries - 1) {
@@ -234,7 +241,7 @@ class PerfilViewModel extends ChangeNotifier {
           }
         }
       } on PostgrestException catch (e) {
-        developer.log(
+        AppLogger.log(
           'VM _loadProfile PostgrestException intento ${attempt + 1}: ${e.message}',
           error: e,
         );
@@ -244,7 +251,7 @@ class PerfilViewModel extends ChangeNotifier {
           continue;
         }
       } catch (e, st) {
-        developer.log(
+        AppLogger.log(
           'VM _loadProfile error genérico intento ${attempt + 1}: $e',
           error: e,
           stackTrace: st,
@@ -268,10 +275,14 @@ class PerfilViewModel extends ChangeNotifier {
     await _loadProfile();
   }
 
-  Future<void> registerManager({required String businessName, required String ruc}) async {
-    await supabase.rpc('registrar_gestor_actual', params: {
-      'p_nombre': businessName.trim(), 'p_ruc': ruc.trim(),
-    });
+  Future<void> registerManager({
+    required String businessName,
+    required String ruc,
+  }) async {
+    await supabase.rpc(
+      'registrar_gestor_actual',
+      params: {'p_nombre': businessName.trim(), 'p_ruc': ruc.trim()},
+    );
     await _loadProfile();
     if (_managerId == null) throw StateError('No se creó el perfil gestor');
     selectMode(AppUserMode.gestor);
@@ -308,7 +319,7 @@ class PerfilViewModel extends ChangeNotifier {
             .eq('auth_id', user.id);
       }
     } on PostgrestException catch (e) {
-      developer.log(
+      AppLogger.log(
         'VM preferencias de notificaciones: ${e.message}',
         error: e,
       );
@@ -362,9 +373,11 @@ class PerfilViewModel extends ChangeNotifier {
       await _loadProfile();
       if (!selectMode(mode)) {
         await supabase.auth.signOut();
-        return LoginResult.error(mode == AppUserMode.gestor
-            ? 'Esta cuenta aún no tiene perfil gestor. Regístralo desde tu perfil deportista.'
-            : 'Esta cuenta aún no tiene perfil deportista.');
+        return LoginResult.error(
+          mode == AppUserMode.gestor
+              ? 'Esta cuenta aún no tiene perfil gestor. Regístralo desde tu perfil deportista.'
+              : 'Esta cuenta aún no tiene perfil deportista.',
+        );
       }
       // Actualizar FCM token tras iniciar sesión
       if (_profile != null) {
@@ -373,10 +386,10 @@ class PerfilViewModel extends ChangeNotifier {
       }
       return LoginResult.success();
     } on AuthException catch (e) {
-      developer.log('VM login AuthException: ${e.message}', error: e);
+      AppLogger.log('VM login AuthException: ${e.message}', error: e);
       return LoginResult.error(_mapAuthError(e.message));
     } catch (e, st) {
-      developer.log('VM login error genérico: $e', error: e, stackTrace: st);
+      AppLogger.log('VM login error genérico: $e', error: e, stackTrace: st);
       return LoginResult.error('Error inesperado');
     } finally {
       _isLoggingIn = false;
@@ -392,7 +405,7 @@ class PerfilViewModel extends ChangeNotifier {
 
       final notificationService = _notificationService;
       if (notificationService == null) {
-        developer.log('VM FCM: NotificationService no disponible');
+        AppLogger.log('VM FCM: NotificationService no disponible');
         return;
       }
 
@@ -404,9 +417,9 @@ class PerfilViewModel extends ChangeNotifier {
           .update({'fcm_token': t})
           .eq('auth_id', user.id);
     } on PostgrestException catch (e) {
-      developer.log('VM FCM PostgrestException: ${e.message}', error: e);
+      AppLogger.log('VM FCM PostgrestException: ${e.message}', error: e);
     } catch (e, st) {
-      developer.log('VM FCM error genérico: $e', error: e, stackTrace: st);
+      AppLogger.log('VM FCM error genérico: $e', error: e, stackTrace: st);
     }
   }
 

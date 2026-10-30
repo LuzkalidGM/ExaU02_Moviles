@@ -1,3 +1,4 @@
+import 'package:gameon/features/privacidad/views/privacidad_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:gameon/features/perfil/models/usuario_deportista.dart';
@@ -664,6 +665,17 @@ class PerfilAuthenticatedView extends StatelessWidget {
                 ));
               }
             },
+          ),
+          Divider(height: 1, color: theme.dividerColor),
+          _buildOptionItem(
+            context: context,
+            icon: Icons.privacy_tip_outlined,
+            title: 'Privacidad',
+            subtitle: 'Administra tus consentimientos',
+            color: Colors.teal,
+            onTap: () => Navigator.push(context, MaterialPageRoute(
+              builder: (_) => const PrivacidadView(desdePerfil: true),
+            )),
           ),
           Divider(height: 1, color: theme.dividerColor),
           _buildOptionItem(

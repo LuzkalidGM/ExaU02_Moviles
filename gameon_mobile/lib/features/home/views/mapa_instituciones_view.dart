@@ -1,3 +1,4 @@
+import 'package:gameon/core/logging/app_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:gameon/features/home/models/institucion_deportiva.dart';
@@ -280,7 +281,7 @@ class _MapaInstitucionesViewState extends State<MapaInstitucionesView> {
         );
       }
     } catch (e) {
-      debugPrint('Error obteniendo ubicación: $e');
+      AppLogger.log('Error obteniendo ubicación: $e');
       if (mounted) {
         setState(() {
           _ubicacionEstado = _UbicacionEstado.error;

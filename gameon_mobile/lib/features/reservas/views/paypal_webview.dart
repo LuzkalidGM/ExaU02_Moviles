@@ -1,3 +1,4 @@
+import 'package:gameon/core/logging/app_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -43,14 +44,14 @@ class _PayPalWebViewState extends State<PayPalWebView> {
         'PayPalHandler',
         onMessageReceived: (message) {
           final msg = message.message;
-          print('Mensaje JS recibido: $msg');
+          AppLogger.log('Mensaje JS recibido: $msg');
           if (msg == 'PAYPAL_THANKS') {
             if (_firstThanksDetection == null) {
               _firstThanksDetection = DateTime.now();
             }
             Future.delayed(const Duration(seconds: 1), () {
               if (mounted) {
-                print('Closing WebView after PayPal final screen.');
+                AppLogger.log('Closing WebView after PayPal final screen.');
                 Navigator.pop(context, true);
               }
             });
@@ -70,32 +71,34 @@ class _PayPalWebViewState extends State<PayPalWebView> {
               _isLoading = true;
               _currentUrl = url;
             });
-            print('Página iniciando: $url');
+            AppLogger.log('Página iniciando: $url');
           },
           onPageFinished: (String url) {
             setState(() {
               _isLoading = false;
               _currentUrl = url;
             });
-            print('Página terminada: $url');
+            AppLogger.log('Página terminada: $url');
 
             _injectCompatibilityScript();
             _checkForPaymentCompletion(url);
             _injectThanksDetector();
           },
           onNavigationRequest: (NavigationRequest request) {
-            print('Navegando a: ${request.url}');
+            AppLogger.log('Navegando a: ${request.url}');
 
             // 🔥 INTERCEPTAR LA REDIRECCIÓN DE PAYPAL
             if (_isPaymentReturnUrl(request.url)) {
-              print('🔗 URL de retorno de PayPal detectada: ${request.url}');
+              AppLogger.log(
+                '🔗 URL de retorno de PayPal detectada: ${request.url}',
+              );
 
               // Extraer orderId y payerId de la URL
               final uri = Uri.parse(request.url);
               final token = uri.queryParameters['token'];
               final payerId = uri.queryParameters['PayerID'];
 
-              print('📝 Token: $token, PayerID: $payerId');
+              AppLogger.log('📝 Token: $token, PayerID: $payerId');
 
               if (token != null && payerId != null && !_paymentCompleted) {
                 _paymentCompleted = true;
@@ -119,15 +122,15 @@ class _PayPalWebViewState extends State<PayPalWebView> {
             return NavigationDecision.navigate;
           },
           onWebResourceError: (WebResourceError error) {
-            print('Error en WebView: ${error.description}');
+            AppLogger.log('Error en WebView: ${error.description}');
             if (error.description.toLowerCase().contains('cors') ||
                 error.description.toLowerCase().contains('xmlhttprequest') ||
                 error.description.toLowerCase().contains('access-control')) {
-              print(
+              AppLogger.log(
                 'Error de CORS detectado (normal en PayPal): ${error.description}',
               );
             } else {
-              print('Error de WebView: ${error.description}');
+              AppLogger.log('Error de WebView: ${error.description}');
             }
           },
         ),
@@ -147,18 +150,14 @@ class _PayPalWebViewState extends State<PayPalWebView> {
   void _injectCompatibilityScript() {
     const compatibilityScript = '''
       (function() {
-        console.log('PayPal WebView Script loaded');
         
         window.addEventListener('error', function(e) {
-          console.log('JavaScript error:', e.message);
         });
-        
-        console.log('PayPal WebView Script initialized');
       })();
     ''';
 
     _controller.runJavaScript(compatibilityScript).catchError((error) {
-      print('Error inyectando script: $error');
+      AppLogger.log('Error inyectando script: $error');
     });
   }
 
@@ -182,12 +181,12 @@ class _PayPalWebViewState extends State<PayPalWebView> {
       check();
     })();''';
     _controller.runJavaScript(detectScript).catchError((e) {
-      print('Error inyectando detector de thanks: $e');
+      AppLogger.log('Error inyectando detector de thanks: $e');
     });
   }
 
   void _checkForPaymentCompletion(String url) {
-    print('Revisando URL para completación de pago: $url');
+    AppLogger.log('Revisando URL para completación de pago: $url');
   }
 
   @override
@@ -233,7 +232,9 @@ class _PayPalWebViewState extends State<PayPalWebView> {
                               size: 26,
                             ),
                             onPressed: () {
-                              print('Usuario cerró el WebView de PayPal');
+                              AppLogger.log(
+                                'Usuario cerró el WebView de PayPal',
+                              );
                               Navigator.pop(context, null);
                             },
                             tooltip: 'Cerrar',
@@ -305,7 +306,7 @@ class _PayPalWebViewState extends State<PayPalWebView> {
                             onPressed: _isLoading
                                 ? null
                                 : () {
-                                    print(
+                                    AppLogger.log(
                                       'Usuario recargó la página de PayPal',
                                     );
                                     _controller.reload();

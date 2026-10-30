@@ -1,5 +1,5 @@
+import 'package:gameon/core/logging/app_logger.dart';
 import 'package:flutter/material.dart';
-import 'dart:developer' as developer;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:gameon/features/reservas/models/horario_area.dart';
@@ -30,7 +30,7 @@ class ReservaCalendarioViewModel {
     cargando = true;
     error = null;
     try {
-      developer.log('[ReservasVM] Cargando horarios areaId=$areaId');
+      AppLogger.log('[ReservasVM] Cargando horarios areaId=$areaId');
       final data = await Supabase.instance.client
           .from('areas_horarios')
           .select()
@@ -39,10 +39,10 @@ class ReservaCalendarioViewModel {
       horarios = (data as List)
           .map((j) => HorarioArea.fromJson(j as Map<String, dynamic>))
           .toList();
-      developer.log('[ReservasVM] Horarios cargados: ${horarios.length}');
+      AppLogger.log('[ReservasVM] Horarios cargados: ${horarios.length}');
     } catch (e, st) {
       error = 'Error cargando horarios: $e';
-      developer.log(
+      AppLogger.log(
         '[ReservasVM][ERROR] cargarHorarios $e',
         error: e,
         stackTrace: st,
@@ -219,7 +219,7 @@ class ReservaCalendarioViewModel {
     }
     guardando = true;
     try {
-      developer.log('[ReservasVM] crearReserva estado=$estado areaId=$areaId');
+      AppLogger.log('[ReservasVM] crearReserva estado=$estado areaId=$areaId');
       final fecha = DateTime(
         selectedDay!.year,
         selectedDay!.month,
@@ -255,18 +255,18 @@ class ReservaCalendarioViewModel {
       if (paypalOrderId != null)
         insertPayload['paypal_order_id'] = paypalOrderId;
       final client = Supabase.instance.client;
-      developer.log('[ReservasVM] Insert reservas payload=$insertPayload');
+      AppLogger.log('[ReservasVM] Insert reservas payload=$insertPayload');
       final resp = await client
           .from('reservas')
           .insert(insertPayload)
           .select()
           .maybeSingle();
       if (resp == null) {
-        developer.log('[ReservasVM][WARN] Insert retornó null');
+        AppLogger.log('[ReservasVM][WARN] Insert retornó null');
         return ReservaInsertResult.error('No se pudo crear la reserva');
       }
       final idGenerado = resp['id'] as int?;
-      developer.log(
+      AppLogger.log(
         '[ReservasVM] Reserva creada id=$idGenerado estado=$estado',
       );
 
@@ -282,11 +282,11 @@ class ReservaCalendarioViewModel {
             'fecha': FieldValue.serverTimestamp(),
             'leido': false,
           });
-          developer.log(
+          AppLogger.log(
             '[ReservasVM] Notificación creada en Firestore para usuario $userIdInt, reservaId=$idGenerado',
           );
         } catch (e, st) {
-          developer.log(
+          AppLogger.log(
             '[ReservasVM][WARN] Error insertando notificación en Firestore: $e',
             error: e,
             stackTrace: st,
@@ -296,14 +296,14 @@ class ReservaCalendarioViewModel {
 
       return ReservaInsertResult.success(id: idGenerado);
     } on PostgrestException catch (e, st) {
-      developer.log(
+      AppLogger.log(
         '[ReservasVM][ERROR] Postgrest crearReserva code=${e.code} message=${e.message}',
         error: e,
         stackTrace: st,
       );
       return ReservaInsertResult.error(e.message);
     } catch (e, st) {
-      developer.log(
+      AppLogger.log(
         '[ReservasVM][ERROR] crearReserva generico $e',
         error: e,
         stackTrace: st,
@@ -367,11 +367,11 @@ class ReservaCalendarioViewModel {
         }
       }
 
-      developer.log(
+      AppLogger.log(
         '[ReservasVM] Marcado reservas existentes fecha=$fechaIso reservadas=${reservas.length} slotsOcupados=${slotsOcupados.length} totalSlots=${slots.length}',
       );
     } catch (e, st) {
-      developer.log(
+      AppLogger.log(
         '[ReservasVM][ERROR] _marcarReservasExistentes $e',
         error: e,
         stackTrace: st,

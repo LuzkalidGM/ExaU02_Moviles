@@ -1,3 +1,4 @@
+import 'package:gameon/core/logging/app_logger.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
@@ -75,11 +76,11 @@ class EmailService {
       if (response.statusCode == 200) {
         return true;
       } else {
-        debugPrint('Error enviando email: ${response.body}');
+        AppLogger.log('Error enviando email: ${response.body}');
         return false;
       }
     } catch (e) {
-      debugPrint('Excepción enviando email: $e');
+      AppLogger.log('Excepción enviando email: $e');
       return false;
     }
   }

@@ -1,3 +1,8 @@
+import 'core/services/analytics_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'features/privacidad/repositories/consentimiento_repository.dart';
+import 'features/privacidad/viewmodels/consentimiento_viewmodel.dart';
+import 'features/privacidad/views/privacidad_view.dart';
 import 'core/config/backend_config.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -53,6 +58,10 @@ void main() async {
   final navigationService = NotificationNavigationService(navigatorKey);
   notificationService = NotificationService(navigationService);
   await notificationService.initialize();
+  final consentimiento = ConsentimientoViewModel(
+    PreferenciasConsentimientoRepository(await SharedPreferences.getInstance()),
+  );
+  await consentimiento.cargar();
   final themeController = ThemeController();
   await themeController.load();
 
@@ -62,6 +71,13 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
+        Provider<AnalyticsService>(
+          create: (_) => ConsentAwareAnalyticsService(
+            consentimiento,
+            LoggingAnalyticsService(),
+          ),
+        ),
+        ChangeNotifierProvider.value(value: consentimiento),
         ChangeNotifierProvider.value(value: themeController),
         ChangeNotifierProvider(
           create: (_) => PerfilViewModel(notificationService),
@@ -93,7 +109,9 @@ class MainApp extends StatelessWidget {
       ],
       supportedLocales: const [Locale('es', 'ES'), Locale('en', 'US')],
       locale: const Locale('es', 'ES'),
-      home: HomeView(),
+      home: context.watch<ConsentimientoViewModel>().tieneDecision
+          ? HomeView()
+          : const PrivacidadView(),
     );
   }
 }

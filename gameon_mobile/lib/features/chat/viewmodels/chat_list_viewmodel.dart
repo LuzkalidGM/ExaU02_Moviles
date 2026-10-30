@@ -1,5 +1,5 @@
+import 'package:gameon/core/logging/app_logger.dart';
 import 'dart:async';
-import 'dart:developer' as developer;
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/conversation.dart';
@@ -122,7 +122,7 @@ class ChatListViewModel extends ChangeNotifier {
               notifyListeners();
             },
             onError: (error) {
-              developer.log(
+              AppLogger.log(
                 'Error en stream de conversaciones',
                 error: error,
                 name: 'ChatListViewModel',
@@ -133,7 +133,7 @@ class ChatListViewModel extends ChangeNotifier {
             },
           );
     } catch (e) {
-      developer.log(
+      AppLogger.log(
         'Error al iniciar ChatListViewModel',
         error: e,
         name: 'ChatListViewModel',
@@ -206,12 +206,12 @@ class ChatListViewModel extends ChangeNotifier {
       // Si no existe, sincronizarlo desde Supabase usando UserSyncService
       await _userSyncService.syncCurrentUser();
 
-      developer.log(
+      AppLogger.log(
         'Usuario sincronizado a Firebase correctamente',
         name: 'ChatListViewModel',
       );
     } catch (e) {
-      developer.log(
+      AppLogger.log(
         'Error al sincronizar usuario actual',
         error: e,
         name: 'ChatListViewModel',
@@ -237,7 +237,7 @@ class ChatListViewModel extends ChangeNotifier {
       await _chatService.deleteConversation(conversationId);
       // El stream se actualizará automáticamente
     } catch (e) {
-      developer.log(
+      AppLogger.log(
         'Error al eliminar conversación',
         error: e,
         name: 'ChatListViewModel',
@@ -256,7 +256,7 @@ class ChatListViewModel extends ChangeNotifier {
         userId: currentUserId,
       );
     } catch (e) {
-      developer.log(
+      AppLogger.log(
         'Error al marcar conversación como leída',
         error: e,
         name: 'ChatListViewModel',

@@ -1,3 +1,5 @@
+import 'package:gameon/core/services/analytics_service.dart';
+import 'package:gameon/core/logging/app_logger.dart';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -241,7 +243,7 @@ class _EditPerfilViewState extends State<EditPerfilView> {
 
     try {
       final bytes = await picked.readAsBytes();
-      debugPrint('📷 Imagen seleccionada: ${bytes.length} bytes');
+      AppLogger.log('📷 Imagen seleccionada: ${bytes.length} bytes');
 
       // Guardar imagen temporalmente para mostrar preview
       setState(() {
@@ -264,6 +266,7 @@ class _EditPerfilViewState extends State<EditPerfilView> {
   }
 
   Future<void> _saveProfile() async {
+    final analytics = context.read<AnalyticsService>();
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -277,7 +280,7 @@ class _EditPerfilViewState extends State<EditPerfilView> {
 
       // Si hay una imagen pendiente, subirla primero
       if (_pendingImageBytes != null && _pendingImageFilename != null) {
-        debugPrint('📤 Subiendo imagen pendiente: $_pendingImageFilename');
+        AppLogger.log('📤 Subiendo imagen pendiente: $_pendingImageFilename');
         imageUrl = await _viewModel.uploadProfileImage(
           _pendingImageBytes!,
           _pendingImageFilename!,
@@ -294,19 +297,25 @@ class _EditPerfilViewState extends State<EditPerfilView> {
           }
           return;
         }
-        debugPrint('✅ Imagen subida: $imageUrl');
+        AppLogger.log('✅ Imagen subida: $imageUrl');
       }
 
       final res = await _viewModel.upsertUsuarioDeportista(
-        id: int.tryParse(widget.profile.id.toString()),
-        username: _usernameController.text,
-        nombre: _nombreController.text,
-        apellidos: _apellidosController.text,
-        telefono: _telefonoController.text,
-        fechaNacimiento: _fechaNacimiento,
-        genero: _genero,
-        nivelHabilidad: _nivelHabilidad,
-        imagenPerfil: imageUrl ?? _localImageUrl,
+        UsuarioDeportista(
+          id: widget.profile.id,
+          username: _usernameController.text,
+          nombre: _nombreController.text,
+          apellidos: _apellidosController.text,
+          telefono: _telefonoController.text,
+          fechaNacimiento: _fechaNacimiento,
+          genero: _genero,
+          nivelHabilidad: _nivelHabilidad,
+          imagenPerfil: imageUrl ?? _localImageUrl,
+          authId: widget.profile.authId,
+          estado: widget.profile.estado,
+          createdAt: widget.profile.createdAt,
+          deportesFavoritos: _deportesFavoritos,
+        ),
       );
       if (!res.ok) {
         if (mounted) {
@@ -329,6 +338,13 @@ class _EditPerfilViewState extends State<EditPerfilView> {
         res.usuarioId!,
         _deportesFavoritos,
       );
+
+      // Datos ficticios para la evidencia; nunca se envían al backend.
+      AppLogger.log(
+        'cliente ana@correo.com cel 987654321 dni 45678912',
+        name: 'PrivacidadDemo',
+      );
+      await analytics.track('perfil_guardado');
 
       if (mounted) {
         // Limpiar imagen pendiente

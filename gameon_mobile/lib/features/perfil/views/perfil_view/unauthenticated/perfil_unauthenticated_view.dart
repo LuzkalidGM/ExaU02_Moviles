@@ -1,3 +1,4 @@
+import 'package:gameon/features/privacidad/views/privacidad_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:gameon/features/perfil/views/perfil_view/unauthenticated/complaints_book_view.dart';
@@ -256,6 +257,16 @@ class PerfilUnauthenticatedView extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
+            _buildOptionItem(
+              Icons.privacy_tip_outlined,
+              'Privacidad',
+              'Administra tus consentimientos',
+              Colors.teal,
+              () => Navigator.push(context, MaterialPageRoute(
+                builder: (_) => const PrivacidadView(desdePerfil: true),
+              )),
+            ),
+            const SizedBox(height: 12),
             _buildOptionItem(
               Icons.headset_mic_outlined,
               'Ayuda en línea',
